@@ -231,7 +231,7 @@ def image_processing(img,
   return contours
   
 
-def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, max_lum = 80):
+def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, max_lum = 90):
   '''
   RANdom SAmple Consensus algorithm adapted to fit an ellipse.
   ------
@@ -266,12 +266,14 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
     
     ellipse = cv.fitEllipseAMS(points)
     center, axes, angle = ellipse
+    
     try:
       axes = tuple([int(e/2) for e in axes]) #cv.fitEllipseAMS returns the rotated
                                              #rectangle in which the ellipse is 
                                              #inscribed.
     except:
-      print(f'axes = {axes}')
+      pass
+
     a,b = axes 
     if a < b:
       a,b = b,a                                 
@@ -284,17 +286,18 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
     if e < limit:
       center = tuple([int(e) for e in center])
       
-      for point in contour:
-        point = point[0]    #point is a list with a single tuple inside it.
+      if innerLuminosity(img, center, axes, angle) < max_lum:
+        for point in contour:
+          point = point[0]    #point is a list with a single tuple inside it.
+          
+          if distance_to_ellipse(axes, center, point, angle) < threshold:
+            inlier_count += 1
         
-        if distance_to_ellipse(axes, center, point, angle) < threshold:
-          inlier_count += 1
-      
-      inlier_density = inlier_count/len(contour)
-      
-      #Only considers ellipses with a sufficienty 'tight' fit
-      if inlier_count > best_inlier_count and inlier_density > min_id:
-        best_model = ellipse
-        best_inlier_count = inlier_count
+        inlier_density = inlier_count/len(contour)
+        
+        #Only considers ellipses with a sufficienty 'tight' fit
+        if inlier_count > best_inlier_count and inlier_density > min_id:
+          best_model = ellipse
+          best_inlier_count = inlier_count
   
   return best_model
