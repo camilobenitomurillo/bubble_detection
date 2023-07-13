@@ -1,10 +1,9 @@
 import numpy as np
 import random
 import cv2 as cv
-import pandas as pd
 
-from math import sqrt,cos,sin,pi,log
-from statistics import mean
+from skimage import img_as_ubyte
+from skimage.feature import canny
 
 def random_points(contour, npoints = 6):
   '''
@@ -56,10 +55,10 @@ def change_frame_of_reference(point, angle, rad=False):
   x, y = point
   
   if rad is False:
-    angle = pi*angle/180
+    angle = np.pi*angle/180
     
-  xp = x*cos(angle) + y*sin(angle)
-  yp = y*cos(angle) - x*sin(angle)
+  xp = x*np.cos(angle) + y*np.sin(angle)
+  yp = y*np.cos(angle) - x*np.sin(angle)
   
   return xp,yp
 
@@ -94,12 +93,12 @@ def distance_to_ellipse(axes, center, point, angle):
     
     #x is one of the two solutions. Given that the solutions are symmetrical and
     #we will only use the norm, there's no need to calculate both solutions.
-    x = xC + (a*b)/sqrt(b**2 + (a*m)**2)
+    x = xC + (a*b)/np.sqrt(b**2 + (a*m)**2)
     y = m*x + p
   
-    r = sqrt((x-xC)**2 + (y-yC)**2)
+    r = np.sqrt((x-xC)**2 + (y-yC)**2)
     
-  CM = sqrt((xM-xC)**2 + (yM-yC)**2)
+  CM = np.sqrt((xM-xC)**2 + (yM-yC)**2)
     
   distance = abs(CM - r)
     
@@ -122,7 +121,7 @@ def distance_2_points(point1, point2):
   x1,y1 = point1
   x2,y2 = point2
   
-  d = sqrt((x1-x2)**2 + (y1-y2)**2)
+  d = np.sqrt((x1-x2)**2 + (y1-y2)**2)
   
   return d
 
@@ -158,7 +157,7 @@ def general_ellipse(center, axes, angle, point, rad = False):
     angle = (np.pi*angle)/180
     
   xp = x*np.cos(angle) - y*np.sin(angle)
-  yp = y*np.cos(angle) + x*sin(angle)
+  yp = y*np.cos(angle) + x*np.sin(angle)
   
   return (xp/a)**2 + (yp/b)**2
 
@@ -168,6 +167,7 @@ def innerLuminosity(img, center, axes, angle):
   ------
   Parameters:
   img : Mat, np.ndarray-like. Variable returned by opencv functions.
+        Source image.
   center : tuple of float
            Coordinates of the center of the ellipse.
   axes : tuple of float
@@ -203,8 +203,35 @@ def innerLuminosity(img, center, axes, angle):
     return -1
   else:
     return luminosity/npoints
+  
+def image_processing(img,
+                     d = 7, sigmaColor = 50, sigmaSpace = 50,
+                     sigma = 2.5, ksize = 4):
+  '''
+  Processes the inputed image and returns its contours.
+  -------
+  Parameters:
+  img : Mat, np.ndarray-like. Variable returned by opencv functions.
+        Source image.
+  d, sigmaColor, sigmaSpace : int, positive.
+                              Parameters for bilateral filter.
+  sigma : float, positive
+  ksize : int
+          Parameter for dilate. Size of the square window.
+  '''
+  out = cv.bilateralFilter(img, d, sigmaColor, sigmaSpace)
+  out = img_as_ubyte(canny(out, sigma))
+  
+  kernel = np.ones((ksize, ksize))
+  out = cv.morphologyEx(out, cv.MORPH_DILATE, kernel)
+  
+  contours = cv.findContours(out,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_NONE)
+  contours = contours[0] if len(contours) == 2 else contours[1]
+  
+  return contours
+  
 
-def ransac(contour, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5):
+def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, max_lum = 80):
   '''
   RANdom SAmple Consensus algorithm adapted to fit an ellipse.
   ------
@@ -222,6 +249,9 @@ def ransac(contour, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5):
           Maximum value for the normalized axis difference. Between 0 and 1.
   min_id : float
            Minimum inlier density to consider the model. Between 0 and 1.
+  max_lum : float
+            Maximum average luminosity inside a an elliptic region of the image
+            for it to be considered a bubble.
   ------
   Returns:
   best_model : tuple
@@ -236,9 +266,12 @@ def ransac(contour, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5):
     
     ellipse = cv.fitEllipseAMS(points)
     center, axes, angle = ellipse
-    axes = tuple([a/2 for a in axes]) #cv.fitEllipseAMS returns the rotated
-                                      #rectangle in which the ellipse is 
-                                      #inscribed.
+    try:
+      axes = tuple([int(e/2) for e in axes]) #cv.fitEllipseAMS returns the rotated
+                                             #rectangle in which the ellipse is 
+                                             #inscribed.
+    except:
+      print(f'axes = {axes}')
     a,b = axes 
     if a < b:
       a,b = b,a                                 
@@ -249,6 +282,8 @@ def ransac(contour, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5):
       e = 1
     #Only considers ellipses with sufficiently low eccentricity
     if e < limit:
+      center = tuple([int(e) for e in center])
+      
       for point in contour:
         point = point[0]    #point is a list with a single tuple inside it.
         
