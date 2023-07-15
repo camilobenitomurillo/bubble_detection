@@ -17,8 +17,14 @@ for i in range(2,81):
   path = f'./experimental_data/s1/m_X{i}.tif'
   img = cv.imread(path, cv.IMREAD_GRAYSCALE)
   
+  print('##################################################')
+  print(f'######################IMAGE #{i}####################')
+  print('##################################################')
+  
   for d in d_range:
     for sigmaColor in sigmaColor_range:
+      print(f'd = {d}, sigmaColor = {sigmaColor}')
+      
       xC_list = []
       yC_list = []
       a_list = []
@@ -48,5 +54,5 @@ for i in range(2,81):
           
           df = toDF(a_list, b_list, xC_list, yC_list, angle_list)
           
-          outpath = f'./auto/m_X{i}_d_{d}_sigmaColor_{sigmaColor}.csv'
-          df.to_csv(outpath)
+      outpath = f'./auto/m_X{i}_d_{d}_sigmaColor_{sigmaColor}.csv'
+      df.to_csv(outpath)
