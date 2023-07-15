@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import cv2 as cv
+import pandas as pd
 
 from skimage import img_as_ubyte
 from skimage.feature import canny
@@ -301,3 +302,41 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
           best_inlier_count = inlier_count
   
   return best_model
+
+def toDF(a_list, b_list, xC_list, yC_list, angle_list):
+  '''
+  Makes a dataframe with all the data extracted from the image with the ransac function.
+  -------
+  Parameters:
+  a_list : list of int
+           Semi-major axis of every ellipse on the image.
+  b_list : list of int
+           Semi-minor axis of every ellipse on the image.
+  xC_list : list of int
+            x coordinate of every ellipse on the image.
+  yC_list : list of int
+            y coordinate of every ellipse on the image.
+  angle_list : list of float
+               Rotation angle of every ellipse on the image.
+  -------
+  Returns:
+  df : pandas.DataFrame
+       DataFrame with all the ellipse data.
+  '''
+  df = pd.DataFrame()
+  
+  df['Semi-major axis (px)'] = a_list
+  df['Semi-minor axis(px)'] = b_list 
+  df['xC (px)'] = xC_list
+  df['yC (px)'] = yC_list
+  df['angle (deg)'] = angle_list
+  
+  area_list = []
+  
+  for i in range(len(a_list)):
+    area = a_list[i]*b_list[i]*np.pi
+    area_list.append(area)
+  
+  df['Area (px^2)'] = area_list
+  
+  return df
