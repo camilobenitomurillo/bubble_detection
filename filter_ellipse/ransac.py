@@ -199,9 +199,9 @@ def innerLuminosity(img, center, axes, angle):
         luminosity += img[x][y]
         npoints += 1
   
-  if npoints == 0:
-    print('No points found in the ellipse.')
-    return -1
+  if npoints == 0: # This seems to happen when the detected ellipse is outside the image.
+    return 255 # Maximum luminosity is returned to make sure that the ellipse is not taken
+               # into a count.
   else:
     return luminosity/npoints
   
