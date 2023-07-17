@@ -18,8 +18,12 @@ for i in range(2,81):
   img = cv.imread(path, cv.IMREAD_GRAYSCALE)
   
   print('##################################################')
-  print(f'######################IMAGE #{i}####################')
+  print(f'################# IMAGE #{i} #######################')
   print('##################################################')
+  try:
+    os.mkdir(f'./auto/m_X{i}')
+  except:
+    pass
   
   for d in d_range:
     for sigmaColor in sigmaColor_range:
@@ -54,5 +58,5 @@ for i in range(2,81):
           
           df = toDF(a_list, b_list, xC_list, yC_list, angle_list)
           
-      outpath = f'./auto/m_X{i}_d_{d}_sigmaColor_{sigmaColor}.csv'
+      outpath = f'./auto/m_X{i}/m_X{i}_d_{d}_sigmaColor_{sigmaColor}.csv'
       df.to_csv(outpath)
