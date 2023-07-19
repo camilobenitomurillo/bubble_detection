@@ -18,7 +18,7 @@ for i in range(2,81):
   img = cv.imread(path, cv.IMREAD_GRAYSCALE)
   
   print('##################################################')
-  print(f'################# IMAGE #{i} #######################')
+  print(f'################# IMAGE #{i} ######################')
   print('##################################################')
   try:
     os.mkdir(f'./auto/m_X{i}')
@@ -29,34 +29,38 @@ for i in range(2,81):
     for sigmaColor in sigmaColor_range:
       print(f'd = {d}, sigmaColor = {sigmaColor}')
       
-      xC_list = []
-      yC_list = []
-      a_list = []
-      b_list = []
-      angle_list = []
-      
-      contours = image_processing(img, d, sigmaColor)
-      
-      for contour in contours:
-        ellipse = ransac(contour, img)
-        
-        if ellipse is not None:
-          center, axes, angle = ellipse
-          center = tuple([int(e) for e in center])
-          axes = tuple([int(e/2) for e in axes])
-          
-          xC, yC = center
-          a, b = axes
-          if a < b:
-            a, b = b, a
-          
-          a_list.append(a)
-          b_list.append(b)  
-          xC_list.append(xC)
-          yC_list.append(yC)
-          angle_list.append(angle)
-          
-          df = toDF(a_list, b_list, xC_list, yC_list, angle_list)
-          
       outpath = f'./auto/m_X{i}/m_X{i}_d_{d}_sigmaColor_{sigmaColor}.csv'
-      df.to_csv(outpath)
+      
+      if not os.path.exists(outpath):
+      
+        xC_list = []
+        yC_list = []
+        a_list = []
+        b_list = []
+        angle_list = []
+        
+        contours = image_processing(img, d, sigmaColor)
+        
+        for contour in contours:
+          ellipse = ransac(contour, img)
+          
+          if ellipse is not None:
+            center, axes, angle = ellipse
+            center = tuple([int(e) for e in center])
+            axes = tuple([int(e/2) for e in axes])
+            
+            xC, yC = center
+            a, b = axes
+            if a < b:
+              a, b = b, a
+            
+            a_list.append(a)
+            b_list.append(b)  
+            xC_list.append(xC)
+            yC_list.append(yC)
+            angle_list.append(angle)
+            
+        df = toDF(a_list, b_list, xC_list, yC_list, angle_list)
+        df.to_csv(outpath)
+      else:
+        print(f'File already exists.')
