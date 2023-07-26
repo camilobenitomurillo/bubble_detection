@@ -303,7 +303,7 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
   
   return best_model
 
-def toDF(a_list, b_list, xC_list, yC_list, angle_list):
+def toDF(a_list, b_list, xC_list, yC_list, angle_list, calibration = False):
   '''
   Makes a dataframe with all the data extracted from the image with the ransac function.
   -------
@@ -318,6 +318,10 @@ def toDF(a_list, b_list, xC_list, yC_list, angle_list):
             y coordinate of every ellipse on the image.
   angle_list : list of float
                Rotation angle of every ellipse on the image.
+  calibration : bool
+                Checks whether the output should be tailored for calibration or not. The
+                manual data doesn't have the eccentricities of the bubbles, so if 
+                calibration == True, the outputed data frame won't have them either.
   -------
   Returns:
   df : pandas.DataFrame
@@ -332,11 +336,18 @@ def toDF(a_list, b_list, xC_list, yC_list, angle_list):
   df['angle (deg)'] = angle_list
   
   area_list = []
+  e_list = []
   
   for i in range(len(a_list)):
     area = a_list[i]*b_list[i]*np.pi
     area_list.append(area)
+    
+    if not calibration:
+      e = np.sqrt(a_list[i]**2 - b_list[i]**2)/a_list[i]
+      e_list.append(e)
   
   df['Area (px^2)'] = area_list
+  if not calibration:
+    df['Eccentricity'] = e_list
   
   return df
