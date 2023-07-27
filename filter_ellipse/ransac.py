@@ -232,7 +232,7 @@ def image_processing(img,
   return contours
   
 
-def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, max_lum = 90):
+def ransac(contour, img, niter = 600, dlim = 5, elim = 0.2, min_id = 0.5, max_lum = 90):
   '''
   RANdom SAmple Consensus algorithm adapted to fit an ellipse.
   ------
@@ -240,14 +240,13 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
   contour : np.ndarray-like
             Array containing the coordinates of the points in the contour.
             Element of the array returned by the function cv.findContours.
-  threshold : float
-              Distance to the ellipse at which a point starts to be considered an
-              outlier.
+  dlim : float
+         Distance to the ellipse at which a point starts to be considered an outlier.
   niter : int
           Number of times the RANSAC algorithm will run before giving its final
           result. 
-  limit : float
-          Maximum value for the normalized axis difference. Between 0 and 1.
+  elim : float
+         Maximum value for the normalized axis difference. Between 0 and 1.
   min_id : float
            Minimum inlier density to consider the model. Between 0 and 1.
   max_lum : float
@@ -284,14 +283,14 @@ def ransac(contour, img, niter = 600, threshold = 5, limit = 0.2, min_id = 0.5, 
     except:
       e = 1
     #Only considers ellipses with sufficiently low eccentricity
-    if e < limit:
+    if e < elim:
       center = tuple([int(e) for e in center])
       
       if innerLuminosity(img, center, axes, angle) < max_lum:
         for point in contour:
           point = point[0]    #point is a list with a single tuple inside it.
           
-          if distance_to_ellipse(axes, center, point, angle) < threshold:
+          if distance_to_ellipse(axes, center, point, angle) < dlim:
             inlier_count += 1
         
         inlier_density = inlier_count/len(contour)
