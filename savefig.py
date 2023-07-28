@@ -31,7 +31,7 @@ for i, ind in enumerate(index):
   contours = image_processing(img)
   
   for ic, contour in enumerate(contours):
-    print(f'contour {ic + 1} in {len(contour)}')
+    print(f'contour {ic + 1} in {len(contours)}')
     
     ellipse = ransac(contour, img)
     
